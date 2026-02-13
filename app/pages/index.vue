@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { defineShortcuts } from '#ui/composables/index.js'
-import { today, getLocalTimeZone } from '@internationalized/date'
-import { DetailsSlideover } from '#components'
+import {defineShortcuts} from '#ui/composables/index.js'
+import {today, getLocalTimeZone} from '@internationalized/date'
+import {DetailsSlideover} from '#components'
 
 const value = shallowRef(today(getLocalTimeZone()))
 const open = ref(false)
@@ -10,7 +10,9 @@ const overlay = useOverlay()
 const detailsSlideover = overlay.create(DetailsSlideover)
 
 defineShortcuts({
-  o: () => { open.value = !open.value }
+	o: () => {
+		open.value = !open.value
+	}
 })
 
 const tasks = ref([
@@ -77,7 +79,7 @@ const tasks = ref([
 ])
 
 const toggleCompleted = (index) => {
-  tasks.value[index].completed = !tasks.value[index].completed
+	tasks.value[index].completed = !tasks.value[index].completed
 }
 
 function openSlideover(index) {
@@ -136,53 +138,57 @@ function addNewTask() {
 					>
             <Span>
               <USlideover
-                v-model:open="open"
-                side="right"
-                inset
-                title="Select Date"
-              >
+				  v-model:open="open"
+				  side="right"
+				  inset
+				  title="Select Date"
+			  >
                 <UButton
-                  icon="i-lucide-calendar"
-                  variant="ghost"
-                />
+					icon="i-lucide-calendar"
+					variant="ghost"
+				/>
                 <template #body>
-                  <UCalendar v-model="value" />
+                  <UCalendar v-model="value"/>
                 </template>
               </USlideover>
             </Span>
-            <Span>{{ value.toString() }}</Span>
-          </div>
-        </template>
-      </UPageCard>
-      <div class="my-2">
-        <UPageList>
-          <UPageCard
-            v-for="(task, index) in tasks"
-            :key="index"
-            variant="ghost"
-            :class="`my-1 hover:scale-99 duration-100 ${task.completed == true ? '' : 'hover:backdrop-brightness-98'}`"
-          >
-            <div @dblclick="openSlideover(index)">
-              <div :class="`flex gap-2 w-full items-center ${task.completed == true ? 'brightness-10' : ''}`">
-                <UButton
-                  :icon="`${task.completed == true ? 'i-lucide-square-check' : 'i-lucide-square'}`"
-                  variant="ghost"
-                  size="md"
-                  @click="toggleCompleted(index)"
-                />
-                <div>
-                  <div :class="`text-highlighted font-medium ${task.completed == true ? 'line-through' : ''}`">
-                    {{ task.taskName }}
-                  </div>
-                  <div :class="`text-muted font-light text-sm ${task.completed == true ? 'line-through' : ''}`">
-                    {{ task.description }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </UPageCard>
-        </UPageList>
-      </div>
-    </div>
-  </div>
+						<Span>{{ value.toString() }}</Span>
+					</div>
+				</template>
+			</UPageCard>
+			<div class="my-2">
+				<UPageList>
+					<UPageCard
+						v-for="task in tasks"
+						:key="task.id"
+						variant="ghost"
+						:class="`my-1 hover:scale-99 duration-100 ${task.completed == true ? '' : 'hover:backdrop-brightness-98'}`"
+					>
+						<div @dblclick="openSlideover(task.id)">
+							<div
+								:class="`flex gap-2 w-full items-center ${task.completed == true ? 'brightness-10' : ''}`">
+								<UButton
+									:icon="`${task.completed == true ? 'i-lucide-square-check' : 'i-lucide-square'}`"
+									variant="ghost"
+									size="md"
+									@click="toggleCompleted(task.id)"
+								/>
+								<div>
+									<div
+										:class="`text-highlighted font-medium ${task.completed == true ? 'line-through' : ''}`">
+										{{ task.taskName }}
+									</div>
+									<div
+										:class="`text-muted font-light text-sm ${task.completed == true ? 'line-through' : ''}`">
+										{{ task.description }}
+									</div>
+								</div>
+								<UButton icon="i-lucide-trash-2" variant="ghost" size="md" class="ml-auto"/>
+							</div>
+						</div>
+					</UPageCard>
+				</UPageList>
+			</div>
+		</div>
+	</div>
 </template>

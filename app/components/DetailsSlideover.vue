@@ -1,30 +1,31 @@
 <script setup lang="ts">
 import * as z from 'zod'
-import type { CalendarDate } from '@internationalized/date'
-import type { FormSubmitEvent } from '#ui/types'
+import type {CalendarDate} from '@internationalized/date'
+import type {FormSubmitEvent} from '#ui/types'
 
 const props = defineProps<{
-  titleRef: string
-  descriptionRef?: string | undefined
-  dateRef: CalendarDate
+	titleRef: string
+	descriptionRef?: string | undefined
+	dateRef: CalendarDate
 }>()
 
 const state = shallowReactive({
-  title: props.titleRef,
-  description: props.descriptionRef,
-  date: props.dateRef
+	title: props.titleRef,
+	description: props.descriptionRef,
+	date: props.dateRef
 })
 
 const schema = z.object({
-  title: z.string('Title is required').min(1, 'Must be at least 1 character'),
-  description: z.string().optional(),
-  date: z.custom<CalendarDate>() })
+	title: z.string('Title is required').min(1, 'Must be at least 1 character'),
+	description: z.string().optional(),
+	date: z.custom<CalendarDate>()
+})
 
 type Schema = z.output<typeof schema>
 
 const emit = defineEmits<{
-  close: [boolean]
-  update: [payload: Schema]
+	close: [boolean]
+	update: [payload: Schema]
 }>()
 
 const toast = useToast()
@@ -32,15 +33,15 @@ const toast = useToast()
 const inputDate = useTemplateRef('inputDate')
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-  toast.add({
-    title: 'Success',
-    description: 'Task updated successfully!',
-    icon: 'i-lucide-circle-check',
-    color: 'success'
-  })
-  emit('close', true)
-  emit('update', event.data)
-  console.log(event.data)
+	toast.add({
+		title: 'Success',
+		description: 'Task updated successfully!',
+		icon: 'i-lucide-circle-check',
+		color: 'success'
+	})
+	emit('close', true)
+	emit('update', event.data)
+	console.log(event.data)
 }
 </script>
 
@@ -103,25 +104,25 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 					</UFormField>
 					<Span>
             <UButton
-              label="Close"
-              class="my-2"
-              variant="ghost"
-              color="neutral"
-              @click="emit('close', false)"
-            />
+				label="Close"
+				class="my-2"
+				variant="ghost"
+				color="neutral"
+				@click="emit('close', false)"
+			/>
           </Span>
-          <Span class="mx-2">
+					<Span class="mx-2">
             <UButton
-              type="submit"
-              variant="ghost"
-              label="Save Changes & Exit"
-              class="my-2"
-            />
+				type="submit"
+				variant="ghost"
+				label="Save Changes & Exit"
+				class="my-2"
+			/>
           </Span>
-        </UForm>
-      </div>
-    </template>
-  </USlideover>
+				</UForm>
+			</div>
+		</template>
+	</USlideover>
 </template>
 
 <style scoped>
