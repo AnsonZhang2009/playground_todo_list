@@ -45,59 +45,63 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <USlideover
-    title="Edit Task"
-    description="Edit details to thy heart's content. "
-  >
-    <template #body>
-      <div>
-        <UForm
-          :schema="schema"
-          :state="state"
-          @submit="onSubmit"
-        >
-          <UFormField
-            label="Title"
-            name="title"
-            class="mb-2"
-          >
-            <UInput v-model="state.title" />
-          </UFormField>
-          <UFormField
-            label="Description"
-            name="description"
-            class="my-2"
-          >
-            <UInput v-model="state.description" />
-          </UFormField>
-          <UFormField
-            label="Date"
-            name="date"
-            class="my-2"
-          >
-            <UInputDate
-              v-model="state.date"
-              ref="inputDate"
-            >
-              <template #trailing>
-                <UPopover :reference="inputDate?.inputsRef[3]?.$el">
-                  <UButton
-                    color="neutral"
-                    variant="link"
-                    size="sm"
-                    icon="i-lucide-calendar"
-                    aria-label="Select a date"
-                    class="px-0"
-                  />
+	<USlideover
+		title="Edit Task"
+		description="Edit details to thy heart's content. "
+		inset
+	>
+		<template #body>
+			<div>
+				<UForm
+					:schema="schema"
+					:state="state"
+					@submit="onSubmit"
+				>
+					<UFormField
+						label="Title"
+						name="title"
+						class="mb-2"
+					>
+						<UInput v-model="state.title"/>
+					</UFormField>
+					<UFormField
+						label="Description"
+						name="description"
+						class="my-2"
+					>
+						<UInput v-model="state.description"/>
+					</UFormField>
+					<UFormField
+						label="Date"
+						name="date"
+						class="my-2"
+					>
+						<UInputDate
+							ref="inputDate"
+							v-model="state.date"
+						>
+							<template #trailing>
+								<UPopover :reference="inputDate?.inputsRef[3]?.$el">
+									<UButton
+										color="neutral"
+										variant="link"
+										size="sm"
+										icon="i-lucide-calendar"
+										aria-label="Select a date"
+										class="px-0"
+									/>
 
-                  <template #content>
-                    <UCalendar v-model="state.date" class="p-2" />
-                  </template>
-                </UPopover>
-              </template>
-            </UInputDate>
-          </UFormField>
-          <Span>
+									<template #content>
+										<UCalendar
+											v-model="state.date"
+											class="p-2"
+										/>
+									</template>
+								</UPopover>
+							</template>
+						</UInputDate>
+					</UFormField>
+					<Span>
             <UButton
               label="Close"
               class="my-2"

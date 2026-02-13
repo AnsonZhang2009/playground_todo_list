@@ -14,30 +14,66 @@ defineShortcuts({
 })
 
 const tasks = ref([
-  {
-    taskName: 'Task 1',
-    description: 'Carpe diem. ',
-    completed: true,
-    due: shallowRef(today(getLocalTimeZone()))
-  },
-  {
-    taskName: 'Task 2',
-    description: 'Dum spiro, spero. ',
-    completed: false,
-    due: shallowRef(today(getLocalTimeZone()))
-  },
-  {
-    taskName: 'Task 3',
-    description: 'Carpe diem. ',
-    completed: true,
-    due: shallowRef(today(getLocalTimeZone()))
-  },
-  {
-    taskName: 'Task 4',
-    description: 'Carpe diem. ',
-    completed: true,
-    due: shallowRef(today(getLocalTimeZone()))
-  }
+	{
+		taskName: 'Task 1',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 2',
+		description: 'Dum spiro, spero. ',
+		completed: false,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 3',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 4',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 3',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 3',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 3',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 3',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 3',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	},
+	{
+		taskName: 'Task 3',
+		description: 'Carpe diem. ',
+		completed: true,
+		due: shallowRef(today(getLocalTimeZone()))
+	}
 ])
 
 const toggleCompleted = (index) => {
@@ -45,36 +81,59 @@ const toggleCompleted = (index) => {
 }
 
 function openSlideover(index) {
-  const task = tasks.value[index]
-  detailsSlideover.open({
-    titleRef: unref(task.taskName),
-    descriptionRef: unref(task.description),
-    dateRef: unref(task.due),
-    onUpdate(payload) {
-      tasks.value[index].taskName = payload.title
-      tasks.value[index].description = payload.description || desc.value || ''
-      tasks.value[index].due = payload.date
-    }
-  })
+	const task = tasks.value[index]
+	detailsSlideover.open({
+		titleRef: unref(task.taskName),
+		descriptionRef: unref(task.description),
+		dateRef: unref(task.due),
+		onUpdate(payload) {
+			tasks.value[index].taskName = payload.title
+			tasks.value[index].description = payload.description || newTask.value.description || ''
+			tasks.value[index].due = payload.date
+		}
+	})
+}
+
+function addNewTask() {
+	const newTask = ref({
+		taskName: 'Enter a task',
+		description: 'Enter a description',
+		completed: false,
+		due: shallowRef(today(getLocalTimeZone()))
+	})
+	detailsSlideover.open({
+		titleRef: unref(newTask.value.taskName),
+		descriptionRef: unref(newTask.value.description),
+		dateRef: unref(newTask.value.due),
+		onUpdate(payload) {
+			newTask.value.taskName = payload.title
+			newTask.value.description = payload.description || newTask.value.description || ''
+			newTask.value.due = payload.date
+			tasks.value.unshift(newTask.value)
+		}
+	})
 }
 </script>
 
 <template>
-  <div class="mx-20 py-2">
-    <UPageHeader
-      title="To Do List"
-      description="A simple to do list created as a side project for Anson Zhang to learn more about Nuxt. "
-      headline="New Release"
-    />
-    <div class="mt-10">
-      <UPageCard
-        variant="soft"
-        class="justify-center items-center"
-      >
-        <template #title>
-          <div
-            class="items-center flex gap-2 w-full"
-          >
+	<div class="mx-20 py-2">
+		<UPageHeader
+			title="To Do List"
+			description="A simple to do list created as a side project for Anson Zhang to learn more about Nuxt. "
+			headline="New Release"
+		/>
+		<div class="fixed bottom-15 right-20 z-40">
+			<UButton class="rounded-full" icon="i-lucide-plus" size="xl" @click="addNewTask"/>
+		</div>
+		<div class="mt-10">
+			<UPageCard
+				variant="soft"
+				class="justify-center items-center"
+			>
+				<template #title>
+					<div
+						class="items-center flex gap-2 w-full"
+					>
             <Span>
               <USlideover
                 v-model:open="open"
