@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import {defineShortcuts} from '#ui/composables/index.js'
-import {today, getLocalTimeZone} from '@internationalized/date'
+import {today, getLocalTimeZone, type CalendarDate} from '@internationalized/date'
 import {DetailsSlideover} from '#components'
+import {useTasksStore} from "~/composables/stores/useTasksStore";
+import type {Task, NewTask} from '#shared/types/db';
 
-const value = shallowRef(today(getLocalTimeZone()))
+const value = shallowRef<CalendarDate>(today(getLocalTimeZone()))
 const open = ref(false)
 
 const overlay = useOverlay()
 const detailsSlideover = overlay.create(DetailsSlideover)
+const tempTodo = ref<Task>({
+	id: -1,
+	title: 'Untitled',
+	description: 'Undesc',
+	completed: false,
+	dueDate: null
+})
 
 defineShortcuts({
 	o: () => {
@@ -15,103 +24,54 @@ defineShortcuts({
 	}
 })
 
-const tasks = ref([
-	{
-		taskName: 'Task 1',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 2',
-		description: 'Dum spiro, spero. ',
-		completed: false,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 3',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 4',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 3',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 3',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 3',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 3',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 3',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	},
-	{
-		taskName: 'Task 3',
-		description: 'Carpe diem. ',
-		completed: true,
-		due: shallowRef(today(getLocalTimeZone()))
-	}
-])
+const {
+	tasks,
+	loading,
+	error,
+	fetchAll,
+	fetchOne,
+	update,
+	toggle,
+	create
+} = useTasksStore()
 
-const toggleCompleted = (index) => {
-	tasks.value[index].completed = !tasks.value[index].completed
-}
+onMounted(async () => {
+	await fetchAll()
+})
 
-function openSlideover(index) {
-	const task = tasks.value[index]
+function openSlideover(index: number) {
+	console.log(index)
+	const task = unref(tasks)[index - 1]
+	if (!task) return;
 	detailsSlideover.open({
-		titleRef: unref(task.taskName),
-		descriptionRef: unref(task.description),
-		dateRef: unref(task.due),
-		onUpdate(payload) {
-			tasks.value[index].taskName = payload.title
-			tasks.value[index].description = payload.description || newTask.value.description || ''
-			tasks.value[index].due = payload.date
+		title: task.title,
+		description: task.description,
+		dueDate: task.dueDate ? new Date(task.dueDate) : null,
+		async onUpdate(payload) {
+			await update(index, {
+				...payload,
+				dueDate: payload.dueDate ? payload.dueDate.toDate(getLocalTimeZone()) : null
+			})
 		}
 	})
 }
 
 function addNewTask() {
-	const newTask = ref({
-		taskName: 'Enter a task',
+	const newTask: NewTask = {
+		title: 'Enter a task',
 		description: 'Enter a description',
 		completed: false,
-		due: shallowRef(today(getLocalTimeZone()))
-	})
+		dueDate: getTodayDate().toDate(getLocalTimeZone())
+	}
 	detailsSlideover.open({
-		titleRef: unref(newTask.value.taskName),
-		descriptionRef: unref(newTask.value.description),
-		dateRef: unref(newTask.value.due),
-		onUpdate(payload) {
-			newTask.value.taskName = payload.title
-			newTask.value.description = payload.description || newTask.value.description || ''
-			newTask.value.due = payload.date
-			tasks.value.unshift(newTask.value)
+		title: newTask.title,
+		description: newTask.description || null,
+		dueDate: newTask.dueDate || null,
+		async onUpdate(payload) {
+			await create({
+				...payload,
+				dueDate: payload.dueDate.toDate(getLocalTimeZone())
+			})
 		}
 	})
 }
@@ -136,23 +96,23 @@ function addNewTask() {
 					<div
 						class="items-center flex gap-2 w-full"
 					>
-            <Span>
-              <USlideover
-				  v-model:open="open"
-				  side="right"
-				  inset
-				  title="Select Date"
-			  >
-                <UButton
-					icon="i-lucide-calendar"
-					variant="ghost"
-				/>
-                <template #body>
-                  <UCalendar v-model="value"/>
-                </template>
-              </USlideover>
-            </Span>
-						<Span>{{ value.toString() }}</Span>
+						<span>
+							<USlideover
+							  v-model:open="open"
+							  side="right"
+							  inset
+							  title="Select Date"
+							>
+								<UButton
+									icon="i-lucide-calendar"
+									variant="ghost"
+								/>
+								<template #body>
+									<UCalendar v-model="value"/>
+								</template>
+							</USlideover>
+						</span>
+						<span>{{ value.toString() }}</span>
 					</div>
 				</template>
 			</UPageCard>
@@ -162,29 +122,58 @@ function addNewTask() {
 						v-for="task in tasks"
 						:key="task.id"
 						variant="ghost"
-						:class="`my-1 hover:scale-99 duration-100 ${task.completed == true ? '' : 'hover:backdrop-brightness-98'}`"
+						:class="`my-1 select-none transition ${task.completed === true ? 'line-through opacity-50' : 'hover:scale-[1.01] hover:bg-elevated/50 opacity-100'}`"
+
 					>
-						<div @dblclick="openSlideover(task.id)">
-							<div
-								:class="`flex gap-2 w-full items-center ${task.completed == true ? 'brightness-10' : ''}`">
-								<UButton
-									:icon="`${task.completed == true ? 'i-lucide-square-check' : 'i-lucide-square'}`"
-									variant="ghost"
-									size="md"
-									@click="toggleCompleted(task.id)"
-								/>
-								<div>
+						<div :class="`flex gap-2 w-full items-center`" @dblclick="openSlideover(task.id)">
+							<UButton
+								:icon="`${task.completed == true ? 'i-lucide-square-check' : 'i-lucide-square'}`"
+								variant="ghost"
+								size="md"
+								@click="toggle(task.id)"
+							/>
+							<div class="flex flex-col items-start justify-center w-full">
+								<UFocusEditable
+									submit-mode="both"
+									@edit="event => tempTodo = task"
+									@submit="event => update(tempTodo.id, tempTodo)"
+									class="w-full"
+								>
 									<div
 										:class="`text-highlighted font-medium ${task.completed == true ? 'line-through' : ''}`">
-										{{ task.taskName }}
+										{{ task.title }}
 									</div>
+									<template #editing="{ submit, cancel }">
+										<UInput
+											v-model="tempTodo.title"
+											@keydown.enter="submit"
+											@keydown.escape="cancel"
+											class="w-full"
+										/>
+									</template>
+								</UFocusEditable>
+
+								<UFocusEditable
+									submit-mode="both"
+									@edit="event => tempTodo = task"
+									@submit="event => update(tempTodo.id, tempTodo)"
+									class="w-full"
+								>
 									<div
 										:class="`text-muted font-light text-sm ${task.completed == true ? 'line-through' : ''}`">
 										{{ task.description }}
 									</div>
-								</div>
-								<UButton icon="i-lucide-trash-2" variant="ghost" size="md" class="ml-auto"/>
+									<template #editing="{ submit, cancel }">
+										<UTextarea
+											v-model="tempTodo.description"
+											@keydown.enter="submit"
+											@keydown.escape="cancel"
+											class="w-full"
+										/>
+									</template>
+								</UFocusEditable>
 							</div>
+							<UButton icon="i-lucide-trash-2" variant="ghost" size="md" class="ml-auto"/>
 						</div>
 					</UPageCard>
 				</UPageList>

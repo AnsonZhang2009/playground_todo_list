@@ -1,12 +1,19 @@
-import {CalendarDate, getLocalTimeZone, today} from "@internationalized/date";
+import {
+	CalendarDate,
+	getLocalTimeZone,
+	today,
+	fromDate,
+	toCalendarDate,
+	toCalendarDateTime, CalendarDateTime
+} from "@internationalized/date";
 
 export function convertJSDate(jsDate: Date): CalendarDate {
-	const year = jsDate.getUTCFullYear()
-	const month = jsDate.getUTCMonth() + 1
-	const day = jsDate.getUTCDate()
-	return new CalendarDate(year, month, day)
+	return toCalendarDate(fromDate(new Date(jsDate), getLocalTimeZone()))
 }
 
+export function convertJSDateTime(jsDate: Date): CalendarDateTime {
+	return toCalendarDateTime(fromDate(new Date(jsDate), getLocalTimeZone()))
+}
 
 export function getTodayDate(): CalendarDate {
 	return today(getLocalTimeZone())

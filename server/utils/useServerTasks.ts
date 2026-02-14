@@ -29,9 +29,12 @@ export function useServerTasks() {
 	 * @return A promise that resolves to the created task object, or undefined if creation fails.
 	 */
 	async function createTask(values: NewTask): Promise<Task | undefined> {
-		const { id, ...safeValues } = values
+		const { id, dueDate, ...safeValues } = values
 		const [result] = await $db.insert(todo)
-			.values(safeValues)
+			.values({
+				...safeValues,
+				dueDate: dueDate ? new Date(dueDate) : null
+			})
 			.returning()
 
 		return result
@@ -68,7 +71,7 @@ export function useServerTasks() {
 	 * @returns A promise that resolves to the updated task object if successful, or undefined if no task was found.
 	 */
 	async function updateTask(values: NewTask): Promise<Task | undefined> {
-		const { id, ...safeValues } = values
+		const { id, dueDate, ...safeValues } = values
 		if (!id)
 			throw createError({
 				status: 403,
@@ -76,7 +79,10 @@ export function useServerTasks() {
 			})
 
 		const [result] = await $db.update(todo)
-			.set(safeValues)
+			.set({
+				...safeValues,
+				dueDate: dueDate ? new Date(dueDate) : null
+			})
 			.where(eq(todo.id, id))
 			.returning()
 

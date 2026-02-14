@@ -1,24 +1,24 @@
 <script setup lang="ts">
 import * as z from 'zod'
-import type {CalendarDate} from '@internationalized/date'
+import {CalendarDate, fromDate, getLocalTimeZone} from '@internationalized/date'
 import type {FormSubmitEvent} from '#ui/types'
 
 const props = defineProps<{
-	titleRef: string
-	descriptionRef?: string | undefined
-	dateRef: CalendarDate
+	title: string
+	description: string | null
+	dueDate: Date | null
 }>()
 
 const state = shallowReactive({
-	title: props.titleRef,
-	description: props.descriptionRef,
-	date: props.dateRef
+	title: props.title,
+	description: props.description,
+	dueDate: props.dueDate ? convertJSDate(props.dueDate) : getTodayDate()
 })
 
 const schema = z.object({
 	title: z.string('Title is required').min(1, 'Must be at least 1 character'),
 	description: z.string().optional(),
-	date: z.custom<CalendarDate>()
+	dueDate: z.custom<CalendarDate>()
 })
 
 type Schema = z.output<typeof schema>
@@ -79,7 +79,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 					>
 						<UInputDate
 							ref="inputDate"
-							v-model="state.date"
+							v-model="state.dueDate"
 						>
 							<template #trailing>
 								<UPopover :reference="inputDate?.inputsRef[3]?.$el">
@@ -94,7 +94,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
 									<template #content>
 										<UCalendar
-											v-model="state.date"
+											v-model="state.dueDate"
 											class="p-2"
 										/>
 									</template>
@@ -102,23 +102,23 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 							</template>
 						</UInputDate>
 					</UFormField>
-					<Span>
-            <UButton
-				label="Close"
-				class="my-2"
-				variant="ghost"
-				color="neutral"
-				@click="emit('close', false)"
-			/>
-          </Span>
-					<Span class="mx-2">
-            <UButton
-				type="submit"
-				variant="ghost"
-				label="Save Changes & Exit"
-				class="my-2"
-			/>
-          </Span>
+					<span>
+						<UButton
+							label="Close"
+							class="my-2"
+							variant="ghost"
+							color="neutral"
+							@click="emit('close', false)"
+						/>
+          			</span>
+					<span class="mx-2">
+						<UButton
+							type="submit"
+							variant="ghost"
+							label="Save Changes & Exit"
+							class="my-2"
+						/>
+				  	</span>
 				</UForm>
 			</div>
 		</template>
