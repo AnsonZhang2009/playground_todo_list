@@ -1,62 +1,22 @@
-import { useDb } from '#server/utils/useDb'
-import { CalendarDate } from '@internationalized/date';
-import { eq, and, SQL } from 'drizzle-orm';
-import { todo } from '#server/db/schema';
+import {useDb} from '#server/utils/useDb'
 import * as z from 'zod'
+import type {GetTasksOptions} from "#shared/types/fetch";
+import {useServerTasks} from "#server/utils/useServerTasks";
 
-function convertJSDate(jsDate: Date): CalendarDate {
-	const year = jsDate.getUTCFullYear()
-	const month = jsDate.getUTCMonth() + 1
-	const day = jsDate.getUTCDate()
-	return new CalendarDate(year, month, day)
-}
+const querySchema = z.custom<GetTasksOptions>().optional()
 
-const querySchema = z.object({
-	title: z.string().optional(),
-	dateURL: z.string().optional(),
-	completed: z.string().optional().transform((v) => v === 'true'),
-})
+/*
+TODO: Commentary
+
+Type-32: Query options are cool because they're mostly optional and that when we need to have certain conditions, we can
+fill in parts of the options and get the specific list of data we want. This acts as a kind of defensive programming
+where you add the utility features ahead of time (as a side-task of implementing the main task) in case if you need it
+in the future without needing to re-implement it again.
+ */
 
 export default defineEventHandler(async (event) => {
-	const db = useDb()
-	const {title, dateURL, completed} = await getValidatedQuery(event, querySchema.parse)
+	const options = await getValidatedQuery(event, querySchema.parse)
+	const $tasks = useServerTasks()
 
-	const conditions: SQL[] = []
-
-	if (title) {
-		conditions.push(eq(todo.title, title))
-	}
-
-	if (dateURL) {
-		const [year, month, day] = dateURL.split('-').map(Number)
-
-		if (!year || !month || !day) {
-			throw createError({
-				statusCode: 404,
-				message: 'Wrong date parameter'
-			})
-		}
-
-		const utcDate = new Date(Date.UTC(
-			year,
-			month - 1, // months are 0-indexed in JS Date
-			day,
-			0, 0, 0, 0
-		))
-
-		conditions.push(eq(todo.dueDate, utcDate))
-	}
-
-	if (completed !== undefined) {
-		conditions.push(eq(todo.completed, completed))
-	}
-
-	const tasks = await db.query.todo.findMany({
-		where: conditions.length > 0 ? and(...conditions) : undefined
-	})
-
-	return tasks.map((i) => ({
-		...i,
-		dueDate: convertJSDate(i.dueDate),
-	}))
+	return await $tasks.getTasks(options)
 })

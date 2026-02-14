@@ -16,13 +16,11 @@ defineShortcuts({
 })
 
 const { data: tasks, refresh, pending } = await useFetch('/api/tasks', {
-	method: 'GET',
-	query: {
-	}
+	method: 'GET'
 })
 
 const toggleCompleted = async (id: number) => {
-	const task = tasks.value.find(t => t.id == id)
+	const task = unref(tasks)?.find(t => t.id == id)
 	if (!task) return
 	task.completed = !task.completed // Optimistic update
 	try {

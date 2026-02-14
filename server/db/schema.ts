@@ -5,8 +5,5 @@ export const todo = sqliteTable('todo', {
 	title: text().notNull(),
 	description: text(),
 	completed: integer({ mode: 'boolean' }),
-	dueDate: integer('due_date', {mode: 'timestamp_ms'}).default(new Date()).$defaultFn(() => new Date()).notNull(),
+	dueDate: integer('due_date', {mode: 'timestamp_ms'}).default(new Date()).$defaultFn(() => new Date()),
 })
-
-export type Task = typeof todo.$inferSelect;
-export type NewTask = typeof todo.$inferInsert;
