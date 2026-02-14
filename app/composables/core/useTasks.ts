@@ -18,7 +18,7 @@ export function useTasks() {
 		})
 	}
 
-	async function updateTask(taskId: number, values: NewTask) {
+	async function updateTask(taskId: number, values: Partial<NewTask>) {
 		return await $fetch<Task | undefined>(`/api/tasks/${taskId}`, {
 			method: 'patch',
 			body: {

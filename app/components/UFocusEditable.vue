@@ -6,14 +6,14 @@
  * instead of swapping between a preview text and an input,
  * it swaps between a "default" (preview) slot and an "editing" slot.
  *
- * - Click (or dblclick / focus, depending on `activationMode`) to enter edit mode.
+ * - Click (or dblclick, depending on `activationMode`) to enter edit mode.
  * - Press Enter to submit (emits `submit`).
  * - Press Escape to cancel (emits `cancel`).
  * - Clicking outside / blurring out submits or cancels based on `submitMode`.
  * - All events (`submit`, `cancel`, `edit`) are cancellable via `.preventDefault()`.
  */
 
-export type ActivationMode = 'click' | 'dblclick' | 'focus'
+export type ActivationMode = 'click' | 'dblclick'
 export type SubmitMode = 'blur' | 'enter' | 'none' | 'both'
 
 export interface FocusEditableEvent {
@@ -106,11 +106,18 @@ const props = withDefaults(defineProps<UFocusEditableProps>(), {
 const emit = defineEmits<UFocusEditableEmits>()
 defineSlots<UFocusEditableSlots>()
 
-// ─── State ────────────────────────────────────────────────────────
+// State
 const isEditing = ref(props.startWithEditMode)
 const rootRef = ref<HTMLElement | null>(null)
 
-// ─── Cancellable event helper ─────────────────────────────────────
+/**
+ * Guard flag: set to `true` immediately when submit() or cancel() begins,
+ * so that no other code path (focusout, pointerdown, keydown) can trigger
+ * a second transition during the same "exit".
+ */
+let isTransitioning = false
+
+// Cancellable event helper
 function createEvent(): FocusEditableEvent {
 	let prevented = false
 	return {
@@ -123,7 +130,7 @@ function createEvent(): FocusEditableEvent {
 	}
 }
 
-// ─── Public API ───────────────────────────────────────────────────
+// Public API
 function edit() {
 	if (props.disabled || isEditing.value) return
 
@@ -134,35 +141,51 @@ function edit() {
 	isEditing.value = true
 	emit('update:editing', true)
 
-	// After switching to editing slot, focus the first focusable element inside
 	nextTick(() => {
 		focusFirstFocusable()
 	})
 }
 
 function submit() {
-	if (!isEditing.value) return
+	if (!isEditing.value || isTransitioning) return
+	isTransitioning = true
 
 	const ev = createEvent()
 	emit('submit', ev)
-	if (ev.defaultPrevented) return
+	if (ev.defaultPrevented) {
+		isTransitioning = false
+		return
+	}
 
 	isEditing.value = false
 	emit('update:editing', false)
+
+	// Reset guard after the DOM has settled
+	nextTick(() => {
+		isTransitioning = false
+	})
 }
 
 function cancel() {
-	if (!isEditing.value) return
+	if (!isEditing.value || isTransitioning) return
+	isTransitioning = true
 
 	const ev = createEvent()
 	emit('cancel', ev)
-	if (ev.defaultPrevented) return
+	if (ev.defaultPrevented) {
+		isTransitioning = false
+		return
+	}
 
 	isEditing.value = false
 	emit('update:editing', false)
+
+	nextTick(() => {
+		isTransitioning = false
+	})
 }
 
-// ─── Focus management ─────────────────────────────────────────────
+// Focus management
 const focusableSelectors = [
 	'input:not([disabled]):not([tabindex="-1"])',
 	'textarea:not([disabled]):not([tabindex="-1"])',
@@ -180,16 +203,25 @@ function focusFirstFocusable() {
 	el?.focus()
 }
 
-// ─── Activation handler ──────────────────────────────────────────
-function handleActivation(mode: 'click' | 'dblclick' | 'focus') {
-	if (props.activationMode === mode) {
+// Activation handler
+function handleClick(event: MouseEvent) {
+	// Only activate from default slot clicks, never from editing slot
+	if (isEditing.value) return
+	if (props.activationMode === 'click') {
 		edit()
 	}
 }
 
-// ─── Keyboard handler ─────────────────────────────────────────────
+function handleDblClick(event: MouseEvent) {
+	if (isEditing.value) return
+	if (props.activationMode === 'dblclick') {
+		edit()
+	}
+}
+
+// Keyboard handler (on root, captures from children)
 function handleKeydown(event: KeyboardEvent) {
-	if (!isEditing.value) return
+	if (!isEditing.value || isTransitioning) return
 
 	if (event.key === 'Escape') {
 		event.preventDefault()
@@ -200,8 +232,6 @@ function handleKeydown(event: KeyboardEvent) {
 
 	if (event.key === 'Enter' && !event.shiftKey) {
 		if (props.submitMode === 'enter' || props.submitMode === 'both') {
-			// Don't prevent default for textareas or contenteditable — allow
-			// Enter to work normally there unless the user explicitly listens.
 			const target = event.target as HTMLElement
 			const isMultiline =
 				target.tagName === 'TEXTAREA' ||
@@ -209,30 +239,33 @@ function handleKeydown(event: KeyboardEvent) {
 
 			if (!isMultiline) {
 				event.preventDefault()
+				event.stopPropagation()
 			}
 			submit()
 		}
 	}
 }
 
-// ─── Outside-click / blur dismiss ─────────────────────────────────
+// Focusout dismiss
 function handleFocusOut(event: FocusEvent) {
-	if (!isEditing.value) return
+	if (!isEditing.value || isTransitioning) return
 
 	const root = rootRef.value
 	if (!root) return
 
 	// relatedTarget is the element receiving focus.
-	// If it's still inside our root, it's not a "blur out".
+	// If it's still inside our root, it's an internal focus move — ignore.
 	const relatedTarget = event.relatedTarget as Node | null
 	if (relatedTarget && root.contains(relatedTarget)) return
 
-	// Use a microtask to let click events settle first
-	// (e.g., clicking a submit button inside the editing slot)
-	requestAnimationFrame(() => {
-		// Re-check: state may have changed during the frame
-		if (!isEditing.value) return
-		if (relatedTarget && root.contains(relatedTarget)) return
+	// Wait a tick: the DOM needs to settle (e.g., a click on a submit button
+	// inside the editing slot will fire focusout before the button's click).
+	nextTick(() => {
+		if (!isEditing.value || isTransitioning) return
+
+		// Re-check: activeElement may now be inside our root
+		// (e.g., focus moved to another child inside the slot)
+		if (root.contains(document.activeElement)) return
 
 		if (props.submitMode === 'blur' || props.submitMode === 'both') {
 			submit()
@@ -242,13 +275,17 @@ function handleFocusOut(event: FocusEvent) {
 	})
 }
 
+// Global pointerdown for outside-click detection
 function handlePointerDownOutside(event: PointerEvent) {
-	if (!isEditing.value) return
+	if (!isEditing.value || isTransitioning) return
 
 	const root = rootRef.value
 	if (!root) return
 	if (root.contains(event.target as Node)) return
 
+	// The pointerdown is outside — dismiss.
+	// We let the focusout handler do the actual work if both fire,
+	// but guard with isTransitioning to prevent doubles.
 	if (props.submitMode === 'blur' || props.submitMode === 'both') {
 		submit()
 	} else {
@@ -256,7 +293,6 @@ function handlePointerDownOutside(event: PointerEvent) {
 	}
 }
 
-// ─── Global pointerdown listener for outside-click detection ──────
 watch(isEditing, (editing) => {
 	if (editing) {
 		document.addEventListener('pointerdown', handlePointerDownOutside, true)
@@ -269,14 +305,13 @@ onBeforeUnmount(() => {
 	document.removeEventListener('pointerdown', handlePointerDownOutside, true)
 })
 
-// If `startWithEditMode`, focus on mount
 onMounted(() => {
 	if (props.startWithEditMode) {
 		nextTick(() => focusFirstFocusable())
 	}
 })
 
-// ─── Expose for template refs ─────────────────────────────────────
+// Expose for template refs
 defineExpose({ edit, submit, cancel, isEditing })
 </script>
 
@@ -286,26 +321,17 @@ defineExpose({ edit, submit, cancel, isEditing })
 		ref="rootRef"
 		:data-editing="isEditing ? '' : undefined"
 		:data-disabled="disabled ? '' : undefined"
-		@click="handleActivation('click')"
-		@dblclick="handleActivation('dblclick')"
-		@focus.capture="handleActivation('focus')"
+		@click="handleClick"
+		@dblclick="handleDblClick"
 		@focusout="handleFocusOut"
 		@keydown="handleKeydown"
 	>
-		<!--
-		  Default slot: shown when NOT editing.
-		  Provides `edit()` so consumers can trigger edit mode programmatically.
-		-->
 		<slot
 			v-if="!isEditing"
 			:edit="edit"
 			:is-editing="(false as const)"
 		/>
 
-		<!--
-		  Editing slot: shown when editing.
-		  Provides `submit()` and `cancel()` for programmatic control.
-		-->
 		<slot
 			v-else
 			name="editing"

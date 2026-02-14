@@ -32,7 +32,8 @@ const {
 	fetchOne,
 	update,
 	toggle,
-	create
+	create,
+	remove
 } = useTasksStore()
 
 onMounted(async () => {
@@ -135,12 +136,12 @@ function addNewTask() {
 							<div class="flex flex-col items-start justify-center w-full">
 								<UFocusEditable
 									submit-mode="both"
-									@edit="event => tempTodo = task"
-									@submit="event => update(tempTodo.id, tempTodo)"
+									@edit="() => tempTodo = { ...task }"
+									@submit="() => update(tempTodo.id, tempTodo)"
 									class="w-full"
+									:disabled="task.completed"
 								>
-									<div
-										:class="`text-highlighted font-medium ${task.completed == true ? 'line-through' : ''}`">
+									<div :class="`text-highlighted font-medium ${task.completed == true ? 'line-through' : ''}`">
 										{{ task.title }}
 									</div>
 									<template #editing="{ submit, cancel }">
@@ -155,12 +156,12 @@ function addNewTask() {
 
 								<UFocusEditable
 									submit-mode="both"
-									@edit="event => tempTodo = task"
-									@submit="event => update(tempTodo.id, tempTodo)"
+									@edit="() => tempTodo = { ...task }"
+									@submit="() => update(tempTodo.id, tempTodo)"
 									class="w-full"
+									:disabled="task.completed"
 								>
-									<div
-										:class="`text-muted font-light text-sm ${task.completed == true ? 'line-through' : ''}`">
+									<div :class="`text-muted font-light text-sm ${task.completed == true ? 'line-through' : ''}`">
 										{{ task.description }}
 									</div>
 									<template #editing="{ submit, cancel }">
@@ -173,7 +174,7 @@ function addNewTask() {
 									</template>
 								</UFocusEditable>
 							</div>
-							<UButton icon="i-lucide-trash-2" variant="ghost" size="md" class="ml-auto"/>
+							<UButton @click="remove(task.id)" icon="i-lucide-trash-2" color="error" variant="ghost" size="md" class="ml-auto"/>
 						</div>
 					</UPageCard>
 				</UPageList>

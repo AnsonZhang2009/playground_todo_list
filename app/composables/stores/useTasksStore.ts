@@ -77,7 +77,7 @@ export function useTasksStore() {
 	 * Update an existing task
 	 * Optimistic: immediately patches local state, rolls back on failure
 	 */
-	async function update(id: number, updates: NewTask) {
+	async function update(id: number, updates: Partial<NewTask>) {
 		error.value = null
 
 		const previous = tasks.value.find((t) => t.id === id)
