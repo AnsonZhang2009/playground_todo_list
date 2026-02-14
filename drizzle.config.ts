@@ -5,6 +5,6 @@ export default defineConfig({
 	schema: './server/db/schema.ts',
 	out: './server/db/migrations',
 	dbCredentials: {
-		url: 'file:sqlite.db'
+		url: 'file:local.db'
 	}
 })
